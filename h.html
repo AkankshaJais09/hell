@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy-Efficient CPU Scheduler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Energy-Efficient CPU Scheduler</h1>
+            <p class="text-gray-600">Dynamic Voltage and Frequency Scaling (DVFS) Simulation</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Input Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Process Configuration</h2>
+                
+                <!-- Scheduler Parameters -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Scheduler Parameters</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">Time Quantum</label>
+                            <input type="number" id="timeQuantum" value="2.0" step="0.1" min="0.1"
+                                class="w-full p-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">Max CPU Frequency (GHz)</label>
+                            <input type="number" id="maxFreq" value="2.0" step="0.1" min="0.5"
+                                class="w-full p-2 border rounded-md" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process Input Form -->
+                <form id="processForm" class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-700">Add New Process</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">Process ID</label>
+                            <input type="number" id="pid" min="1" 
+                                class="w-full p-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">Arrival Time</label>
+                            <input type="number" id="arrivalTime" min="0" step="0.1"
+                                class="w-full p-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">Burst Time</label>
+                            <input type="number" id="burstTime" min="0.1" step="0.1"
+                                class="w-full p-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">Priority (1-10)</label>
+                            <input type="number" id="priority" min="1" max="10"
+                                class="w-full p-2 border rounded-md" required>
+                        </div>
+                    </div>
+                    <button type="submit" 
+                        class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors">
+                        Add Process
+                    </button>
+                </form>
+
+                <!-- Control Buttons -->
+                <div class="grid grid-cols-2 gap-4 mt-6">
+                    <button id="startBtn" 
+                        class="bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition-colors">
+                        Start Simulation
+                    </button>
+                    <button id="resetBtn" 
+                        class="bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition-colors">
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visualization Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Gantt Chart</h2>
+                <div class="h-64">
+                    <canvas id="ganttChart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p>* Bar height indicates CPU frequency</p>
+                    <p>* Colors represent different processes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Table -->
+        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Process Details</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Burst Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnaround Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waiting Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Energy Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processTableBody" class="bg-white divide-y divide-gray-200">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-2">Average Waiting Time</h3>
+                <p id="avgWaitingTime" class="text-2xl text-blue-600">0.00 ms</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-2">Average Turnaround Time</h3>
+                <p id="avgTurnaroundTime" class="text-2xl text-green-600">0.00 ms</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-2">CPU Utilization</h3>
+                <p id="cpuUtilization" class="text-2xl text-purple-600">0%</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-2">Total Energy Consumption</h3>
+                <p id="energyEfficiency" class="text-2xl text-orange-600">0.00 units</p>
+            </div>
+        </div>
+
+        <!-- Energy Consumption Graph -->
+        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Energy Consumption Over Time</h2>
+            <div class="h-64">
+                <canvas id="energyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- DVFS Information -->
+        <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">CPU Frequency Distribution</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">Current Settings</h3>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li>Minimum Frequency: <span id="minFreqDisplay">0.5 GHz</span></li>
+                        <li>Maximum Frequency: <span id="maxFreqDisplay">2.0 GHz</span></li>
+                        <li>Time Quantum: <span id="timeQuantumDisplay">2.0 ms</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">Frequency Statistics</h3>
+                    <div class="h-40">
+                        <canvas id="frequencyDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-gray-600">
+        <p>Energy-Efficient CPU Scheduler Simulation</p>
+        <p class="text-sm">Implementing DVFS for Optimal Power Management</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="sim.js"></script>
+    <script src="vir.js"></script>
+</body>
+</html>
